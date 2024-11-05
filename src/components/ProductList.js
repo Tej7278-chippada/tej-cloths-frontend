@@ -32,6 +32,10 @@ function ProductList() {
     setSelectedProduct(product);
   };
 
+  // const convertBufferToBase64 = (buffer) => {
+  //   return `data:image/jpeg;base64,${buffer.toString('base64')}`;
+  // };
+
   return (
     <div>
       <h2>Products Page</h2>
@@ -93,11 +97,16 @@ function ProductList() {
           
           <Card key={product._id} style={{ margin: '1rem 0', cursor: 'pointer' }}  >
           <CardMedia>
-              <div style={{ display: 'flex', overflowX: 'scroll' }}>
-              {product.images && product.images.map((image, index) => (
-                  <img src={image} alt={`Product ${index}`} key={index} style={{ width: '100%', marginTop: '10px', objectFit: 'cover' }} />
-                ))}
-              </div>
+                  <div style={{ display: 'flex', overflowX: 'scroll' }}>
+                    {product.media && product.media.map((base64Image, index) => (
+                      <img
+                        src={`data:image/jpeg;base64,${base64Image}`}
+                        alt={`Product ${index}`}
+                        key={index}
+                        style={{ width: '100%', marginTop: '10px', objectFit: 'cover' }}
+                      />
+                    ))}
+                  </div>
             </CardMedia>
           <CardContent >
               <Typography variant="h5" onClick={() => openProductDetail(product)}>{product.title}</Typography>
@@ -107,11 +116,11 @@ function ProductList() {
               <p>Gender: {product.gender}</p>
               <p>Delivery Days: {product.deliveryDays}</p>
               <p>Description: {product.description}</p>
-              <div>
+              {/* <div>
                 {product.images && product.images.map((image, index) => (
                   <img src={image} alt={`Product ${index}`} key={index} style={{ width: '100%', marginTop: '10px' }} />
                 ))}
-              </div>
+              </div> */}
               <IconButton onClick={() => handleLike(product._id)}>
                 <ThumbUp /> {product.likes}
               </IconButton>

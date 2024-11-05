@@ -9,11 +9,21 @@ function ProductDetail({ product, onClose }) {
     <Dialog open={!!product} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogContent>
         <CardMedia>
-          <div style={{ display: 'flex', overflowX: 'scroll' }}>
+          {/* <div style={{ display: 'flex', overflowX: 'scroll' }}>
           {product.images && product.images.map((image, index) => (
               <img src={image} alt={`Product ${index}`} key={index} style={{ width: '100%', marginTop: '10px', objectFit: 'cover' }} />
             ))}
-          </div>
+          </div> */}
+          <div style={{ display: 'flex', overflowX: 'scroll' }}>
+                    {product.media && product.media.map((base64Image, index) => (
+                      <img
+                        src={`data:image/jpeg;base64,${base64Image}`}
+                        alt={`Product ${index}`}
+                        key={index}
+                        style={{ width: '100%', marginTop: '10px', objectFit: 'cover' }}
+                      />
+                    ))}
+                  </div>
         </CardMedia>
         <Typography variant="h4">{product.title}</Typography>
         <Typography>Price: ₹{product.price}</Typography>

@@ -4,7 +4,7 @@ import { TextField, Button, Select, MenuItem, InputLabel, FormControl, Card, Car
     Dialog,
     DialogActions,
     DialogContent,
-    DialogTitle, Toolbar, CardMedia } from '@mui/material';
+    DialogTitle, Toolbar, CardMedia, Alert } from '@mui/material';
 import { addProduct, deleteProduct, fetchProducts, updateProduct } from '../api/api';
 // import ProductCard from "../components/ProductCard";
 import { Grid } from "@mui/material";
@@ -20,17 +20,20 @@ function Admin() {
     gender: '',
     deliveryDays: '',
     description: '',
-    media: null,
+    images: null,
   });
   const [editingProduct, setEditingProduct] = useState(null);
+  const [existingMedia, setExistingMedia] = useState([]);
+  const [newMedia, setNewMedia] = useState([]);
+  const [mediaError, setMediaError] = useState('');
 
   useEffect(() => {
     fetchProducts().then((response) => setProducts(response.data));
   }, []);
 
-  const handleFileChange = (e) => {
-    setFormData({ ...formData, images: e.target.files });
-  };
+  // const handleFileChange = (e) => {
+  //   setFormData({ ...formData, images: e.target.files });
+  // };
 
 
   const handleSubmit = async (e) => {
@@ -52,26 +55,51 @@ function Admin() {
     data.append('deliveryDays', formData.deliveryDays);
     data.append('description', formData.description);
 
-    // Append each selected file to the "media" field in FormData
-    if (formData.images) {
-      Array.from(formData.images).forEach((file) => {
-        data.append('media', file);
-      });
+    // Add only new media files to FormData
+    newMedia.forEach((file) => data.append('media', file));
+
+    // Pass existing media IDs to keep them in the database
+    if (existingMedia.length > 0) {
+      data.append('existingMedia', JSON.stringify(existingMedia.filter(media => !media.remove).map(media => media._id)));
     }
+    // Append each selected file to the "media" field in FormData
+    // if (formData.images) {
+    //   Array.from(formData.images).forEach((file) => {
+    //     data.append('media', file);
+    //   });
+    // }
+
+    
 
     
     
-
+    // Append IDs of media to be deleted if editing
+    // if (editingProduct) {
+    //   console.log("Updating product:", editingProduct._id); // Log product ID
+    //   data.append('deleteMedia', JSON.stringify(existingMedia.filter(media => media.remove).map(media => media._id)));
+    //   await updateProduct(editingProduct._id, data);
+    //   setEditingProduct(null);
+    // } else {
+    //   await addProduct(data);
+    // }
     if (editingProduct) {
-      console.log("Updating product:", editingProduct._id); // Log product ID
-      await updateProduct(editingProduct._id, data);
+      await updateProduct(editingProduct._id, data)
+        .catch((error) => {
+          console.error("Error updating product:", error);
+          alert("Failed to update product.");
+        });
       setEditingProduct(null);
     } else {
-      await addProduct(data);
+      await addProduct(data)
+        .catch((error) => {
+          console.error("Error adding product:", error);
+          alert("Failed to add product.");
+        });
     }
+
     handleCloseDialog();
-    await refreshProducts(); // Refresh products list after submission
-    resetFormData(); // Reset form fields
+    // await refreshProducts(); // Refresh products list after submission
+    // resetFormData(); // Reset form fields
 
     fetchProducts().then((response) => setProducts(response.data));
     setFormData({ title: '', price: '', stockStatus: '', stockCount: '', gender: '', deliveryDays: '', description: '', images: null });
@@ -102,40 +130,63 @@ function Admin() {
       description: product.description,
       images: null, // Reset images to avoid re-uploading
     });
+    setExistingMedia(product.media.map((media) => ({ ...media, remove: false })));
     setOpenDialog(true);
+  };
+
+  const handleDeleteMedia = (mediaId) => {
+    setExistingMedia(existingMedia.map(media => media._id === mediaId ? { ...media, remove: true } : media));
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    const totalMediaCount = selectedFiles.length + existingMedia.filter((media) => !media.remove).length;
+
+    if (totalMediaCount > 5) {
+      setMediaError("Media exceeds its maximum count of 5.");
+    } else {
+      setMediaError("");
+      setNewMedia(selectedFiles);
+    }
   };
 
   const handleDelete = async (id) => {
-    await deleteProduct(id);
+    await deleteProduct(id)
+      .catch((error) => {
+        console.error("Error deleting product:", error);
+        alert("Failed to delete product.");
+      });
     fetchProducts().then((response) => setProducts(response.data));
   };
 
-  const handleOpenDialog = (product = null) => {
-    setEditingProduct(product);
-    resetFormData();
-    setOpenDialog(true);
+  const handleOpenDialog = () => setOpenDialog(true);
+
+  const handleCloseDialog = () => {
+    setEditingProduct(null);
+    setExistingMedia([]);
+    setNewMedia([]);
+    setOpenDialog(false);
+    setMediaError('');
   };
 
-  const handleCloseDialog = () => setOpenDialog(false);
+  // const refreshProducts = async () => {
+  //   // Fetch updated product list
+  //   const response = await fetchProducts();
+  //   setProducts(response.data);
+  // };
 
-  const refreshProducts = async () => {
-    // Fetch updated product list
-    const response = await fetchProducts();
-    setProducts(response.data);
-  };
-
-  const resetFormData = () => {
-    setFormData({
-      title: '',
-      price: '',
-      stockStatus: '',
-      stockCount: '',
-      gender: '',
-      deliveryDays: '',
-      description: '',
-      images: null,
-    });
-  };
+  // const resetFormData = () => {
+  //   setFormData({
+  //     title: '',
+  //     price: '',
+  //     stockStatus: '',
+  //     stockCount: '',
+  //     gender: '',
+  //     deliveryDays: '',
+  //     description: '',
+  //     images: null,
+  //   });
+  // };
   
 
   return (
@@ -183,8 +234,25 @@ function Admin() {
 
         <TextField label="Delivery Days" type="number" value={formData.deliveryDays} onChange={(e) => setFormData({ ...formData, deliveryDays: e.target.value })} required />
         <TextField label="Description" multiline rows={4} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
-        <input type="file" multiple onChange={handleFileChange} />
-        
+          {/* Existing media with delete option */}
+          {existingMedia.length > 0 && (
+              <div>
+                <Typography variant="subtitle1">Existing Images</Typography>
+                <div style={{ display: 'flex', overflowX: 'scroll' }}>
+                  {existingMedia.map((media) => (
+                    !media.remove && (
+                      <div key={media._id} style={{ position: 'relative', margin: '5px' }}>
+                        <img src={`data:image/jpeg;base64,${media.data}`} alt="Product Media" style={{ width: '100px', height: '100px', objectFit: 'cover' }} />
+                        <Button size="small" color="secondary" onClick={() => handleDeleteMedia(media._id)}>Remove</Button>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+        <input type="file" multiple onChange={handleFileChange} /> 
+        {/* onChange={(e) => setFormData({ ...formData, images: e.target.files })} */}
+        {mediaError && <Alert severity="error">{mediaError}</Alert>}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
@@ -198,7 +266,7 @@ function Admin() {
 
 
 
-      
+      {/* Product cards */}
       <div style={{ marginTop: '2rem' }}>
       <Grid container spacing={3}>
       {products.map((product) => (
@@ -207,11 +275,21 @@ function Admin() {
           
           <Card key={product._id} style={{ margin: '1rem 0' }}>
           <CardMedia>
-            <div style={{ display: 'flex', overflowX: 'scroll' }}>
+            {/* <div style={{ display: 'flex', overflowX: 'scroll' }}>
             {product.images && product.images.map((image, index) => (
                 <img src={image} alt={`Product ${index}`} key={index} style={{ width: '100%', marginTop: '10px', objectFit: 'cover' }} />
               ))}
-            </div>
+            </div> */}
+            <div style={{ display: 'flex', overflowX: 'scroll' }}>
+                    {product.media && product.media.map((base64Image, index) => (
+                      <img
+                        src={`data:image/jpeg;base64,${base64Image}`}
+                        alt={`Product ${index}`}
+                        key={index}
+                        style={{ width: '100%', marginTop: '10px', objectFit: 'cover' }}
+                      />
+                    ))}
+                  </div>
           </CardMedia>
           <CardContent>
               <Typography variant="h5">{product.title}</Typography>
@@ -221,11 +299,11 @@ function Admin() {
               <p>Gender: {product.gender}</p>
               <p>Delivery Days: {product.deliveryDays}</p>
               <p>Description: {product.description}</p>
-              <div>
+              {/* <div>
                 {product.images && product.images.map((image, index) => (
                   <img src={image} alt={`Product ${index}`} key={index} style={{ width: '100%', marginTop: '10px' }} />
                 ))}
-              </div>
+              </div> */}
             </CardContent>
             <CardActions>
               <Button onClick={() => handleEdit(product)} color="primary">Edit</Button>
