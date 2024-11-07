@@ -8,7 +8,7 @@ import { Container, AppBar, Toolbar, Typography } from '@mui/material';
 function App() {
   return (
     <Router>
-      <AppBar position="static">
+      <AppBar position="sticky"> {/* position="static" */}
         <Toolbar>
           <Typography variant="h6" style={{ flexGrow: 1 }}>
             Tej-Cloths

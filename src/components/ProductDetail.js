@@ -35,7 +35,7 @@ function ProductDetail({ product, onClose }) {
           {/* {product.media.map((file, index) => (
             <img key={index} src={file} alt={`media-${index}`} style={{ width: '100px', marginRight: '5px' }} />
           ))} */}
-          <img src="../assets/teja-pic-1.jpg" alt='tej' style={{ width: '100px', marginRight: '5px', objectFit: 'cover' }} />
+          {/* <img src="../assets/teja-pic-1.jpg" alt='tej' style={{ width: '100px', marginRight: '5px', objectFit: 'cover' }} /> */}
         </div>
       </DialogContent>
     </Dialog>
